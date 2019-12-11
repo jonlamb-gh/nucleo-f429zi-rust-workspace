@@ -1,8 +1,8 @@
 // Copied from https://github.com/stm32-rs/stm32f4xx-hal/blob/master/examples/delay-blinky.rs
 
-#![deny(unsafe_code)]
 #![no_main]
 #![no_std]
+#![deny(unsafe_code)]
 
 // Halt on panic
 #[allow(unused_extern_crates)] // NOTE(allow) bug rust-lang/rust#53964
