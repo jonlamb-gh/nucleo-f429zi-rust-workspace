@@ -44,6 +44,6 @@ fn main() -> ! {
     }
 
     loop {
-        // TODO - nop
+        cortex_m::asm::nop();
     }
 }
