@@ -16,6 +16,7 @@ NOTE: Ethernet/SPI issue on mbed [wiki](https://os.mbed.com/teams/ST/wiki/Nucleo
 - [cortex-m-rt](https://crates.io/crates/cortex-m-rt)
 - [stm32f4](https://crates.io/crates/stm32f4)
 - [stm32f4xx-hal](https://crates.io/crates/stm32f4xx-hal)
+- [my fork of stm32f4xx-hal](https://github.com/jonlamb-gh/stm32f4xx-hal)
 - [stm32-eth](https://crates.io/crates/stm32-eth)
 - [stm32f429i-disc](https://crates.io/crates/stm32f429i-disc)
 - [cortex-m-rtfm](https://crates.io/crates/cortex-m-rtfm)
