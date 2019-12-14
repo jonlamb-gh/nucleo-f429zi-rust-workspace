@@ -1,15 +1,13 @@
 // Copied from:
 // https://github.com/stm32-rs/stm32-eth/blob/master/examples/pktgen.rs
 
-// TODO - does stm32-eth setup promiscuous mode?
-
 #![no_main]
 #![no_std]
 
 extern crate stm32f4xx_hal as hal;
 
 #[allow(unused_imports)]
-use panic_halt;
+use panic_semihosting;
 
 use crate::hal::{prelude::*, serial::config::Config, serial::Serial, stm32, stm32::interrupt};
 use core::cell::RefCell;
@@ -17,7 +15,7 @@ use core::fmt::Write;
 use cortex_m::asm;
 use cortex_m::interrupt::Mutex;
 use cortex_m_rt::{entry, exception, ExceptionFrame};
-use stm32_eth::{Eth, RingEntry, TxError};
+use stm32_eth::{Eth, RingEntry};
 
 const SRC_MAC: [u8; 6] = [0x00, 0x00, 0xDE, 0xAD, 0xBE, 0xEF];
 const DST_MAC: [u8; 6] = [0x00, 0x00, 0xBE, 0xEF, 0xDE, 0xAD];
@@ -32,6 +30,7 @@ fn main() -> ! {
     let mut cp =
         cortex_m::peripheral::Peripherals::take().expect("Failed to take cortex_m::Peripherals");
 
+    setup_systick(&mut cp.SYST);
     stm32_eth::setup(&dp.RCC, &dp.SYSCFG);
 
     // Set up the system clock. We want to run at 48MHz for this one.
@@ -58,6 +57,15 @@ fn main() -> ! {
 
     writeln!(stdout, "Initializing").unwrap();
 
+    if !stm32::SYST::is_precise() {
+        writeln!(
+            stdout,
+            "Warning: SYSTICK with source {:?} is not precise",
+            cp.SYST.get_clock_source()
+        )
+        .unwrap();
+    }
+
     let gpioa = dp.GPIOA.split();
     let gpiob = dp.GPIOB.split();
     let gpioc = dp.GPIOC.split();
@@ -72,6 +80,7 @@ fn main() -> ! {
     let mut eth = Eth::new(
         dp.ETHERNET_MAC,
         dp.ETHERNET_DMA,
+        SRC_MAC,
         &mut rx_ring[..],
         &mut tx_ring[..],
     );
@@ -164,20 +173,18 @@ fn main() -> ! {
         // Fill tx queue
         const SIZE: usize = 1500;
         if status.link_detected() {
-            'egress: loop {
-                let r = eth.send(SIZE, |buf| {
-                    buf[0..6].copy_from_slice(&DST_MAC);
-                    buf[6..12].copy_from_slice(&SRC_MAC);
-                    buf[12..14].copy_from_slice(&ETH_TYPE);
-                });
+            let r = eth.send(SIZE, |buf| {
+                buf[0..6].copy_from_slice(&DST_MAC);
+                buf[6..12].copy_from_slice(&SRC_MAC);
+                buf[12..14].copy_from_slice(&ETH_TYPE);
+            });
 
-                match r {
-                    Ok(()) => {
-                        tx_bytes += SIZE;
-                        tx_pkts += 1;
-                    }
-                    Err(TxError::WouldBlock) => break 'egress,
+            match r {
+                Ok(()) => {
+                    tx_bytes += SIZE;
+                    tx_pkts += 1;
                 }
+                _ => (),
             }
         }
 
@@ -188,6 +195,20 @@ fn main() -> ! {
             }
         });
     }
+}
+
+fn setup_systick(syst: &mut stm32::SYST) {
+    syst.set_reload(100 * stm32::SYST::get_ticks_per_10ms());
+    syst.clear_current();
+    syst.enable_counter();
+    syst.enable_interrupt();
+
+    //if !stm32::SYST::is_precise() {
+    //    panic!(
+    //        "Warning: SYSTICK with source {:?} is not precise",
+    //        syst.get_clock_source()
+    //    )
+    //}
 }
 
 #[exception]

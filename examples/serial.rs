@@ -5,7 +5,7 @@
 extern crate stm32f4xx_hal as hal;
 
 #[allow(unused_imports)]
-use panic_halt;
+use panic_semihosting;
 
 use crate::hal::{prelude::*, serial::config::Config, serial::Serial, stm32};
 use core::fmt::Write;

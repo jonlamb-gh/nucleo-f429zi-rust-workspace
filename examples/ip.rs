@@ -7,7 +7,7 @@
 extern crate stm32f4xx_hal as hal;
 
 #[allow(unused_imports)]
-use panic_halt;
+use panic_semihosting;
 
 use crate::hal::{prelude::*, serial::config::Config, serial::Serial, stm32, stm32::interrupt};
 use core::cell::RefCell;
@@ -25,9 +25,6 @@ const SRC_MAC: [u8; 6] = [0x00, 0x00, 0xDE, 0xAD, 0xBE, 0xEF];
 
 static TIME: Mutex<RefCell<u64>> = Mutex::new(RefCell::new(0));
 static ETH_PENDING: Mutex<RefCell<bool>> = Mutex::new(RefCell::new(false));
-
-// TODO - use the SingleCoreLock pattern from the rpi-tutorials or
-// my home-phone project to setup the static logger impl
 
 #[entry]
 fn main() -> ! {
@@ -82,12 +79,14 @@ fn main() -> ! {
     let mut eth = Eth::new(
         dp.ETHERNET_MAC,
         dp.ETHERNET_DMA,
+        SRC_MAC,
         &mut rx_ring[..],
         &mut tx_ring[..],
     );
     eth.enable_interrupt(&mut cp.NVIC);
 
-    let local_addr = Ipv4Address::new(10, 0, 0, 1);
+    let local_addr = Ipv4Address::new(192, 168, 1, 39);
+    //let local_addr = Ipv4Address::new(10, 0, 0, 1);
     let ip_addr = IpCidr::new(IpAddress::from(local_addr), 24);
     let mut ip_addrs = [ip_addr];
     let mut neighbor_storage = [None; 16];
@@ -157,6 +156,7 @@ fn main() -> ! {
 
 fn setup_systick(syst: &mut stm32::SYST) {
     syst.set_reload(stm32::SYST::get_ticks_per_10ms() / 10);
+    syst.clear_current();
     syst.enable_counter();
     syst.enable_interrupt();
 }

@@ -4,12 +4,8 @@
 #![no_std]
 #![deny(unsafe_code)]
 
-// Halt on panic
-#[allow(unused_extern_crates)] // NOTE(allow) bug rust-lang/rust#53964
-extern crate panic_halt; // panic handler
-
-//#[allow(unused_imports)]
-//use panic_halt;
+#[allow(unused_imports)]
+use panic_semihosting;
 
 use cortex_m;
 use cortex_m_rt::entry;
@@ -23,9 +19,8 @@ fn main() -> ! {
         stm32::Peripherals::take(),
         cortex_m::peripheral::Peripherals::take(),
     ) {
-        // Set up the LED. On the Nucleo-446RE it's connected to pin PA5.
-        let gpioa = dp.GPIOA.split();
-        let mut led = gpioa.pa5.into_push_pull_output();
+        let gpiob = dp.GPIOB.split();
+        let mut led = gpiob.pb7.into_push_pull_output();
 
         // Set up the system clock. We want to run at 48MHz for this one.
         let rcc = dp.RCC.constrain();

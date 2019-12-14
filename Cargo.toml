@@ -7,7 +7,7 @@ name = "nucleo-f429zi-rust-workspace"
 [dependencies]
 cortex-m = "0.6"
 cortex-m-rt = "0.6"
-panic-halt = "0.2"
+panic-semihosting = "0.5"
 mcp49xx = "0.1"
 #log = "0.4"
 
