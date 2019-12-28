@@ -94,7 +94,7 @@ fn main() -> ! {
 
     writeln!(stdout, "WAVE_DATA ([u8]) len: {}", input.len()).unwrap();
 
-    let (_input, header) = parse_header(input).map_err(|_| unimplemented!()).unwrap();
+    let (_input, header) = parse_header(input).unwrap();
     writeln!(stdout, "{:#?}", header).unwrap();
 
     assert_eq!(header.riff.chunk_size as usize, input.len() - 8);

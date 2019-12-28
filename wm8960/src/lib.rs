@@ -4,15 +4,18 @@
 extern crate stm32f4xx_hal as hal;
 
 use crate::hal::{i2c, i2s};
+use crate::register::*;
 
+mod register;
 pub mod wave_header;
 
-const WM8960_ADDRESS: u8 = 0x1A;
+const DEVICE_ADDRESS: u8 = 0x1A;
 
 #[derive(Debug)]
 pub enum Error {
     I2c(i2c::Error),
     I2s(i2s::Error),
+    InvalidInputData,
 }
 
 pub struct Wm8960<I2C, I2S> {
@@ -29,51 +32,105 @@ where
         let mut wm = Wm8960 { i2c, i2s };
 
         // Reset
-        wm.write_reg(0x0F, 0x0000)?;
+        wm.write_control_register(Register::Reset, 0)?;
 
         // Set power source
-        wm.write_reg(0x19, 1 << 8 | 1 << 7 | 1 << 6)?;
-        wm.write_reg(0x1A, 1 << 8 | 1 << 7 | 1 << 6 | 1 << 5 | 1 << 4 | 1 << 3)?;
-        wm.write_reg(0x2F, 1 << 3 | 1 << 2)?;
+        let mut val = PwrMgmt1(0);
+        val.set_vref(true);
+        val.set_vmidsel(0b11);
+        wm.write_control_register(Register::PwrMgmt1, val.0)?;
+        let mut val = PwrMgmt2(0);
+        val.set_spkr(true);
+        val.set_spkl(true);
+        val.set_rout1(true);
+        val.set_lout1(true);
+        val.set_dacr(true);
+        val.set_dacl(true);
+        wm.write_control_register(Register::PwrMgmt2, val.0)?;
+        let mut val = PwrMgmt3(0);
+        val.set_romix(true);
+        val.set_lomix(true);
+        wm.write_control_register(Register::PwrMgmt3, val.0)?;
 
         // Configure clock
         // MCLK->div1->SYSCLK->DAC/ADC sample Freq
         // = 25MHz(MCLK)/2*256 = 48.8kHz
-        wm.write_reg(0x04, 0x0000)?;
+        let val = Clocking(0);
+        wm.write_control_register(Register::Clocking, val.0)?;
 
         // Configure ADC/DAC
-        wm.write_reg(0x05, 0x0000)?;
+        let val = Ctr1(0);
+        wm.write_control_register(Register::Ctr1, val.0)?;
 
         // Configure audio interface
         // I2S format 16 bits word length
-        wm.write_reg(0x07, 0x0002)?;
+        let mut val = AudioIface(0);
+        val.set_format(0b10);
+        wm.write_control_register(Register::AudioIface, val.0)?;
 
         // Configure HP_L and HP_R OUTPUTS
-        wm.write_reg(0x02, 0x006F | 0x0100)?; // LOUT1 Volume Set
-        wm.write_reg(0x03, 0x006F | 0x0100)?; // ROUT1 Volume Set
+        let mut val = Lout1Vol(0);
+        val.set_lout1vol(0x6F);
+        val.set_out1vu(true);
+        wm.write_control_register(Register::Lout1Vol, val.0)?;
+        let mut val = Rout1Vol(0);
+        val.set_rout1vol(0x6F);
+        val.set_out1vu(true);
+        wm.write_control_register(Register::Rout1Vol, val.0)?;
 
         // Configure SPK_RP and SPK_RN
-        wm.write_reg(0x28, 0x007F | 0x0100)?; // Left Speaker Volume
-        wm.write_reg(0x29, 0x007F | 0x0100)?; // Right Speaker Volume
+        let mut val = Lout2Vol(0);
+        val.set_spklvol(0x7F);
+        val.set_spkvu(true);
+        wm.write_control_register(Register::Lout2Vol, val.0)?;
+        let mut val = Rout2Vol(0);
+        val.set_spkrvol(0x7F);
+        val.set_spkvu(true);
+        wm.write_control_register(Register::Rout2Vol, val.0)?;
 
         // Enable the OUTPUTS
-        wm.write_reg(0x31, 0x00F7)?; // Enable Class D Speaker Outputs
+        let mut val = ClassdCtr1(0);
+        val.set_reserved(0b110111);
+        val.set_spkopen(0b11);
+        wm.write_control_register(Register::ClassdCtr1, val.0)?;
 
         // Configure DAC volume
-        wm.write_reg(0x0a, 0x00FF | 0x0100)?;
-        wm.write_reg(0x0b, 0x00FF | 0x0100)?;
+        let mut val = LdacVol(0);
+        val.set_ldacvol(0xFF);
+        val.set_dacvu(true);
+        wm.write_control_register(Register::LdacVol, val.0)?;
+        let mut val = RdacVol(0);
+        val.set_rdacvol(0xFF);
+        val.set_dacvu(true);
+        wm.write_control_register(Register::RdacVol, val.0)?;
 
         // 3D
         // wm.write_reg(0x10, 0x001F);
 
         // Configure MIXER
-        wm.write_reg(0x22, 1 << 8 | 1 << 7)?;
-        wm.write_reg(0x25, 1 << 8 | 1 << 7)?;
+        let mut val = LoutMix1(0);
+        val.set_li2lo(true);
+        val.set_ld2lo(true);
+        wm.write_control_register(Register::LoutMix1, val.0)?;
+        let mut val = RoutMix1(0);
+        val.set_ri2ro(true);
+        val.set_rd2ro(true);
+        wm.write_control_register(Register::RoutMix1, val.0)?;
 
         // Jack Detect
-        wm.write_reg(0x18, 1 << 6 | 0 << 5)?;
-        wm.write_reg(0x17, 0x01C3)?;
-        wm.write_reg(0x30, 0x0009)?;
+        let mut val = Addctr2(0);
+        val.set_hpswen(true);
+        wm.write_control_register(Register::Addctr2, val.0)?;
+        let mut val = Addctr1(0);
+        val.set_toen(true);
+        val.set_toclksel(true);
+        val.set_vsel(0b11);
+        val.set_tsden(true);
+        wm.write_control_register(Register::Addctr1, val.0)?;
+        let mut val = Addctr4(0);
+        val.set_mbsel(true);
+        val.set_hpsel(0b10);
+        wm.write_control_register(Register::Addctr4, val.0)?;
 
         Ok(wm)
     }
@@ -83,10 +140,13 @@ where
         Ok(())
     }
 
-    // 9-bit registers
-    fn write_reg(&mut self, reg: u8, data: u16) -> Result<(), Error> {
-        let data = [(reg << 1) | (data >> 8) as u8 & 0x1, (data & 0xFF) as u8];
-        self.i2c.write(WM8960_ADDRESS, &data)?;
+    /// Write a 9-bit control register
+    fn write_control_register(&mut self, reg: Register, data: u16) -> Result<(), Error> {
+        let bytes = [
+            (reg.addr() << 1) | (data >> 8) as u8 & 0x1,
+            (data & 0xFF) as u8,
+        ];
+        self.i2c.write(DEVICE_ADDRESS, &bytes)?;
         Ok(())
     }
 }
