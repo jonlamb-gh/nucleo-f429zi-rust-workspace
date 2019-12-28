@@ -1,3 +1,7 @@
+// sox /tmp/file.wav -c 2 -r 48000 /tmp/new_file.wav
+//
+// xxd -i /tmp/ring.wav > wave_data.h
+//
 //WaveHeader {
 //    riff: ChunkRiff {
 //        chunk_id: RIFF,
