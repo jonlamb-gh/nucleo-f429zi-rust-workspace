@@ -1,6 +1,5 @@
 #![no_main]
 #![no_std]
-#![deny(unsafe_code)]
 
 extern crate stm32f4xx_hal as hal;
 
@@ -19,12 +18,10 @@ use crate::wave_data::WAVE_DATA;
 use core::fmt::Write;
 use cortex_m_rt::ExceptionFrame;
 use cortex_m_rt::{entry, exception};
+use wm8960::wave_header::parse_header;
 use wm8960::Wm8960;
 
 mod wave_data;
-
-// Offset relative to audio file header size
-const WAVE_START_ADDRESS: usize = 58;
 
 #[entry]
 fn main() -> ! {
@@ -85,22 +82,31 @@ fn main() -> ! {
 
     let mut wm8960 = Wm8960::new(i2c, i2s).unwrap();
 
-    let wave_data_size = WAVE_DATA.len() * core::mem::size_of::<u16>();
-    let data_size = wave_data_size - WAVE_START_ADDRESS;
+    writeln!(stdout, "Init Wm8960").unwrap();
 
-    writeln!(stdout, "WAVE_START_ADDRESS: {}", WAVE_START_ADDRESS).unwrap();
+    writeln!(stdout, "WAVE_DATA ([u16]) len: {}", WAVE_DATA.len()).unwrap();
 
-    writeln!(
-        stdout,
-        "WAVE_DATA size {} -- data size {}",
-        wave_data_size, data_size
-    )
-    .unwrap();
+    let (head, input, tail) = unsafe { WAVE_DATA.align_to::<u8>() };
+
+    assert!(head.is_empty());
+    assert!(tail.is_empty());
+    assert_eq!(input.len(), WAVE_DATA.len() * 2);
+
+    writeln!(stdout, "WAVE_DATA ([u8]) len: {}", input.len()).unwrap();
+
+    let (_input, header) = parse_header(input).map_err(|_| unimplemented!()).unwrap();
+    writeln!(stdout, "{:#?}", header).unwrap();
+
+    assert_eq!(header.riff.chunk_size as usize, input.len() - 8);
+    let data_offset = header.data_offset();
+
+    writeln!(stdout, "data_offset: {}", data_offset).unwrap();
+    assert_eq!(header.data.chunk_size as usize, input.len() - data_offset);
 
     loop {
         writeln!(stdout, "Playing").unwrap();
 
-        wm8960.play_audio(&WAVE_DATA[WAVE_START_ADDRESS..]).unwrap();
+        wm8960.play_audio(&WAVE_DATA[data_offset..]).unwrap();
 
         delay.delay_ms(1000_u32);
     }

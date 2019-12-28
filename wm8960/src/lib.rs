@@ -5,6 +5,8 @@ extern crate stm32f4xx_hal as hal;
 
 use crate::hal::{i2c, i2s};
 
+pub mod wave_header;
+
 const WM8960_ADDRESS: u8 = 0x1A;
 
 #[derive(Debug)]

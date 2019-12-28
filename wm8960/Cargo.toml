@@ -15,3 +15,8 @@ branch = "home-phone-changes"
 [dependencies.embedded-hal]
 features = ["unproven"]
 version = "0.2"
+
+[dependencies.nom]
+version = "5.0"
+default-features = false
+features = []
