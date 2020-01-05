@@ -46,6 +46,8 @@ fn main() -> ! {
     let i2s_sd = gpiob.pb15.into_alternate_af5();
     let i2s_mck = gpioc.pc6.into_alternate_af5();
 
+    let i2s_ext_sd = gpioc.pc2.into_alternate_af6();
+
     let serial_tx = gpiod.pd8.into_alternate_af7();
     let serial_rx = gpiod.pd9.into_alternate_af7();
 
@@ -75,14 +77,15 @@ fn main() -> ! {
 
     writeln!(stdout, "Init I2S").unwrap();
 
+    //let i2s = I2s::i2s2(dp.SPI2, (i2s_sd, i2s_ck, i2s_ws, i2s_mck), clocks)
+    //    .into_master_output::<u16>(I2sStandard::Philips);
+
     let i2s = I2s::i2s2(dp.SPI2, (i2s_sd, i2s_ck, i2s_ws, i2s_mck), clocks)
-        .into_master_output::<u16>(I2sStandard::Philips);
+        .into_master_full_duplex::<u16, _>(dp.I2S2EXT, i2s_ext_sd, I2sStandard::Philips);
 
     writeln!(stdout, "Init Wm8960").unwrap();
 
     let mut wm8960 = Wm8960::new(i2c, i2s).unwrap();
-
-    writeln!(stdout, "Init Wm8960").unwrap();
 
     writeln!(stdout, "WAVE_DATA ([u16]) len: {}", WAVE_DATA.len()).unwrap();
 
@@ -104,12 +107,20 @@ fn main() -> ! {
     assert_eq!(header.data.chunk_size as usize, input.len() - data_offset);
 
     loop {
-        writeln!(stdout, "Playing").unwrap();
+        writeln!(stdout, "Reading audio").unwrap();
 
-        wm8960.play_audio(&WAVE_DATA[data_offset..]).unwrap();
+        wm8960.read_audio().unwrap();
 
         delay.delay_ms(1000_u32);
     }
+
+    //loop {
+    //    writeln!(stdout, "Writing audio").unwrap();
+    //
+    //    wm8960.write_audio(&WAVE_DATA[data_offset..]).unwrap();
+    //
+    //    delay.delay_ms(1000_u32);
+    //}
 }
 
 #[exception]

@@ -20,6 +20,10 @@ features = ["rt", "stm32f429"]
 git = "https://github.com/jonlamb-gh/stm32f4xx-hal.git"
 branch = "home-phone-changes"
 
+# TODO
+[patch."https://github.com/jonlamb-gh/stm32f4xx-hal.git".stm32f4xx-hal]
+path = "/home/jon/repos/personal/stm32f4xx-hal"
+
 [dependencies.embedded-hal]
 features = ["unproven"]
 version = "0.2"
