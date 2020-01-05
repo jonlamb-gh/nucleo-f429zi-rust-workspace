@@ -61,6 +61,26 @@ impl Register {
 
 bitfield! {
     #[derive(Debug, Copy, Clone, PartialEq)]
+    pub struct LeftInputVol(u16);
+    u16;
+    pub linvol, set_linvol : 5, 0;
+    pub lizc, set_lizc : 6;
+    pub linmute, set_linmute : 7;
+    pub ipvu, set_ipvu : 8;
+}
+
+bitfield! {
+    #[derive(Debug, Copy, Clone, PartialEq)]
+    pub struct RightInputVol(u16);
+    u16;
+    pub rinvol, set_rinvol : 5, 0;
+    pub rizc, set_rizc : 6;
+    pub rinmute, set_rinmute : 7;
+    pub ipvu, set_ipvu : 8;
+}
+
+bitfield! {
+    #[derive(Debug, Copy, Clone, PartialEq)]
     pub struct Lout1Vol(u16);
     u16;
     pub lout1vol, set_lout1vol : 6, 0;
@@ -138,6 +158,30 @@ bitfield! {
 
 bitfield! {
     #[derive(Debug, Copy, Clone, PartialEq)]
+    pub struct NoiseGate(u16);
+    u16;
+    pub ngat, set_ngat : 0;
+    pub ngth, set_ngth : 7, 3;
+}
+
+bitfield! {
+    #[derive(Debug, Copy, Clone, PartialEq)]
+    pub struct LadcVol(u16);
+    u16;
+    pub ladcvol, set_ladcvol : 7, 0;
+    pub adcvu, set_adcvu : 8;
+}
+
+bitfield! {
+    #[derive(Debug, Copy, Clone, PartialEq)]
+    pub struct RadcVol(u16);
+    u16;
+    pub radcvol, set_radcvol : 7, 0;
+    pub adcvu, set_adcvu : 8;
+}
+
+bitfield! {
+    #[derive(Debug, Copy, Clone, PartialEq)]
     pub struct Addctr1(u16);
     u16;
     pub toen, set_toen : 0;
@@ -193,6 +237,28 @@ bitfield! {
     pub lout1, set_lout1 : 6;
     pub dacr, set_dacr : 7;
     pub dacl, set_dacl : 8;
+}
+
+bitfield! {
+    #[derive(Debug, Copy, Clone, PartialEq)]
+    pub struct LadcSignalPath(u16);
+    u16;
+    pub lmic2b, set_lmic2b : 3;
+    pub lmicboost, set_lmicboost : 5, 4;
+    pub lmp2, set_lmp2 : 6;
+    pub lmp3, set_lmp3 : 7;
+    pub lmn1, set_lmn1 : 8;
+}
+
+bitfield! {
+    #[derive(Debug, Copy, Clone, PartialEq)]
+    pub struct RadcSignalPath(u16);
+    u16;
+    pub rmic2b, set_rmic2b : 3;
+    pub rmicboost, set_rmicboost : 5, 4;
+    pub rmp2, set_rmp2 : 6;
+    pub rmp3, set_rmp3 : 7;
+    pub rmn1, set_rmn1 : 8;
 }
 
 bitfield! {
